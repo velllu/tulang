@@ -1,11 +1,8 @@
 use std::fmt::Display;
 
-/// A character is just a letter from the alphabet
-type Character = String;
-
 pub enum Instruction {
-    MoveToCharRight(Character),
-    MoveToCharLeft(Character),
+    MoveToCharRight(char),
+    MoveToCharLeft(char),
 }
 
 impl Display for Instruction {

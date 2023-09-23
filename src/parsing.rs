@@ -10,32 +10,36 @@ pub enum ParseError {
     CouldNotReadFile,
     EmptyLine,
     MissingParameter,
-    UnknownCommand(String),
+    OnlyOneLetterAllowed,
+    UnknownCommand,
+}
+
+fn get_char(instruction_split: Vec<&str>, argument_number: usize) -> Result<char, ParseError> {
+    let element = match instruction_split.get(argument_number) {
+        Some(element) => element,
+        None => return Err(ParseError::MissingParameter),
+    };
+
+    if element.len() != 1 {
+        return Err(ParseError::OnlyOneLetterAllowed);
+    }
+
+    // This should never fail because we just checked if `element` is composed by only
+    // one char
+    Ok(element.chars().next().unwrap())
 }
 
 pub fn parse_instruction(instruction_split: Vec<&str>) -> Result<Instruction, ParseError> {
-    macro_rules! get {
-        ($option:expr) => {
-            if let Some(unwrapped) = $option {
-                unwrapped
-            } else {
-                return Err(ParseError::MissingParameter);
-            }
-        };
-    }
-
     let first = *match instruction_split.first() {
         Some(first) => first,
         None => return Err(ParseError::EmptyLine), // TODO: Implement comments
     };
 
-    use Instruction as Ins;
-
     Ok(match first {
-        "move_to_char_right" => Ins::MoveToCharRight(get!(instruction_split.get(1)).to_string()),
-        "move_to_char_left" => Ins::MoveToCharLeft(get!(instruction_split.get(1)).to_string()),
+        "move_to_char_right" => Instruction::MoveToCharRight(get_char(instruction_split, 1)?),
+        "move_to_char_left" => Instruction::MoveToCharLeft(get_char(instruction_split, 1)?),
 
-        _ => return Err(ParseError::UnknownCommand(first.to_string())),
+        _ => return Err(ParseError::UnknownCommand),
     })
 }
 
