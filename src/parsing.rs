@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+use std::time::Instant;
 
 use crate::opcodes::Instruction;
 
@@ -11,6 +12,9 @@ pub enum ParseError {
     EmptyLine,
     MissingParameter,
     OnlyOneLetterAllowed,
+    OnlyOneAlphabetAllowed,
+    NoAlphabet,
+    EmptyFile,
     UnknownCommand,
 }
 
@@ -39,6 +43,21 @@ pub fn parse_instruction(instruction_split: Vec<&str>) -> Result<Instruction, Pa
         "move_to_char_right" => Instruction::MoveToCharRight(get_char(instruction_split, 1)?),
         "move_to_char_left" => Instruction::MoveToCharLeft(get_char(instruction_split, 1)?),
 
+        "alphabet" => {
+            let string = instruction_split.get(1);
+            let string = match string {
+                Some(string) => string,
+                None => return Err(ParseError::MissingParameter),
+            };
+
+            let mut chars: Vec<char> = Vec::new();
+            for char in string.chars() {
+                chars.push(char);
+            }
+
+            Instruction::Alphabet(chars)
+        }
+
         _ => return Err(ParseError::UnknownCommand),
     })
 }
@@ -56,12 +75,36 @@ pub fn parse_file(path: impl AsRef<Path>) -> Result<Vec<Instruction>, ParseError
     }
 
     let mut instructions: Vec<Instruction> = Vec::new();
-
+    let mut alphabet_already_exists = false;
     for line in file_contents.lines() {
         let split: Vec<&str> = line.split(", ").collect();
         let instruction = parse_instruction(split)?;
 
+        // Only one alphabet istruction is allowed
+        match instruction {
+            Instruction::Alphabet(_) => {
+                if alphabet_already_exists {
+                    return Err(ParseError::OnlyOneAlphabetAllowed);
+                }
+
+                alphabet_already_exists = true;
+            }
+
+            _ => {}
+        }
+
         instructions.push(instruction);
+    }
+
+    if let Some(first_instruction) = instructions.get(0) {
+        // The alphabet instruction must be the first instruction
+        match first_instruction {
+            Instruction::Alphabet(_) => {}
+            _ => return Err(ParseError::NoAlphabet),
+        }
+    } else {
+        // and the file also cannot be empty
+        return Err(ParseError::EmptyFile);
     }
 
     Ok(instructions)
