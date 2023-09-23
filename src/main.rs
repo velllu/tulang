@@ -1,7 +1,9 @@
 use parsing::parse_file;
+use turing_machine::TuringMachine;
 
 mod opcodes;
 mod parsing;
+mod turing_machine;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -10,9 +12,5 @@ fn main() {
         panic!("not enough args");
     }
 
-    let parsed_file = parse_file(args.get(1).unwrap()).unwrap();
-
-    for instruction in parsed_file {
-        println!("{}", instruction);
-    }
+    let machine = TuringMachine::new(args.get(1).unwrap()).unwrap();
 }

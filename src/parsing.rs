@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
-use std::time::Instant;
 
 use crate::opcodes::Instruction;
 
@@ -106,6 +105,8 @@ pub fn parse_file(path: impl AsRef<Path>) -> Result<Vec<Instruction>, ParseError
         // and the file also cannot be empty
         return Err(ParseError::EmptyFile);
     }
+
+    // TODO: Verify that instructions contain *only* chars allowed in the alphabet
 
     Ok(instructions)
 }
