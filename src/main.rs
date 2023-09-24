@@ -13,4 +13,7 @@ fn main() {
     }
 
     let machine = TuringMachine::new(args.get(1).unwrap()).unwrap();
+    for state in machine.calculate_states() {
+        println!("{}", state);
+    }
 }
