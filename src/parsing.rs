@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::Read;
+use std::mem::replace;
 use std::path::Path;
 
 use crate::opcodes::Instruction;
@@ -13,11 +14,13 @@ pub enum ParseError {
     OnlyOneLetterAllowed,
     OnlyOneAlphabetAllowed,
     NoAlphabet,
+    CouldNotParseReplace,
+    CouldNotParseCharacter,
     EmptyFile,
     UnknownCommand,
 }
 
-fn get_char(instruction_split: Vec<&str>, argument_number: usize) -> Result<char, ParseError> {
+fn get_char(instruction_split: &Vec<&str>, argument_number: usize) -> Result<char, ParseError> {
     let element = match instruction_split.get(argument_number) {
         Some(element) => element,
         None => return Err(ParseError::MissingParameter),
@@ -32,6 +35,37 @@ fn get_char(instruction_split: Vec<&str>, argument_number: usize) -> Result<char
     Ok(element.chars().next().unwrap())
 }
 
+fn get_replaces(instruction_split: &Vec<&str>) -> Result<Vec<(char, char)>, ParseError> {
+    // We need to remove the first two elements because they will be both
+    // `move_to_char_right/left` and the actual character, we just need to focust on the
+    // part after
+    let (_, instruction_split) = instruction_split.split_at(2);
+
+    let mut replaces: Vec<(char, char)> = Vec::new();
+
+    // The syntax looks like this: `a -> d, b -> c`
+    for replace in instruction_split {
+        // We need to further split the ` -> `
+        let (replace_from, replace_to) = match replace.split_once(" -> ") {
+            Some((replace_from, replace_to)) => (replace_from, replace_to),
+            None => return Err(ParseError::CouldNotParseReplace),
+        };
+
+        // ... and then we need to convert it to chars
+        if replace_from.len() != 1 || replace_to.len() != 1 {
+            return Err(ParseError::CouldNotParseCharacter);
+        }
+
+        // (this is safe because we just checked)
+        let replace_from = replace_from.chars().next().unwrap();
+        let replace_to = replace_to.chars().next().unwrap();
+
+        replaces.push((replace_from, replace_to));
+    }
+
+    Ok(replaces)
+}
+
 pub fn parse_instruction(instruction_split: Vec<&str>) -> Result<Instruction, ParseError> {
     let first = *match instruction_split.first() {
         Some(first) => first,
@@ -39,8 +73,15 @@ pub fn parse_instruction(instruction_split: Vec<&str>) -> Result<Instruction, Pa
     };
 
     Ok(match first {
-        "move_to_char_right" => Instruction::MoveToCharRight(get_char(instruction_split, 1)?),
-        "move_to_char_left" => Instruction::MoveToCharLeft(get_char(instruction_split, 1)?),
+        "move_to_char_right" => Instruction::MoveToCharRight(
+            get_char(&instruction_split, 1)?,
+            get_replaces(&instruction_split)?,
+        ),
+
+        "move_to_char_left" => Instruction::MoveToCharLeft(
+            get_char(&instruction_split, 1)?,
+            get_replaces(&instruction_split)?,
+        ),
 
         "alphabet" => {
             let string = instruction_split.get(1);

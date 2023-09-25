@@ -67,23 +67,42 @@ impl TuringMachine {
     fn calculate_move_states(
         &self,
         excluded_char: char,
+        replaces: &Vec<(char, char)>,
         direction: &Direction,
         current_state: &mut u32,
     ) -> Vec<State> {
         let alphabet_without_char: Vec<char> = self
             .alphabet
             .iter()
-            .filter(|x| **x != excluded_char)
+            .filter(|x| **x != excluded_char) // We will add this back later
             .cloned()
             .collect();
 
         let mut states: Vec<State> = Vec::new();
         for character in alphabet_without_char.iter() {
+            if replaces
+                .iter()
+                .any(|(replace_from, _)| replace_from == character)
+            {
+                // We skip if character needs to be replaced, we will add that later
+                continue;
+            }
+
             states.push(State {
                 direction: *direction,
                 current_state: *current_state,
                 next_state: *current_state,
                 replace: (*character, *character),
+            })
+        }
+
+        // We now add all the the replaces
+        for (replace_from, replace_to) in replaces {
+            states.push(State {
+                direction: *direction,
+                current_state: *current_state,
+                next_state: *current_state,
+                replace: (*replace_from, *replace_to),
             })
         }
 
@@ -118,13 +137,23 @@ impl TuringMachine {
 
         for instruction in self.instructions.iter() {
             match instruction {
-                Instruction::MoveToCharLeft(char) => states.append(
-                    &mut self.calculate_move_states(*char, &Direction::Left, &mut current_state),
-                ),
+                Instruction::MoveToCharLeft(char, replaces) => {
+                    states.append(&mut self.calculate_move_states(
+                        *char,
+                        replaces,
+                        &Direction::Left,
+                        &mut current_state,
+                    ))
+                }
 
-                Instruction::MoveToCharRight(char) => states.append(
-                    &mut self.calculate_move_states(*char, &Direction::Right, &mut current_state),
-                ),
+                Instruction::MoveToCharRight(char, replaces) => {
+                    states.append(&mut self.calculate_move_states(
+                        *char,
+                        replaces,
+                        &Direction::Right,
+                        &mut current_state,
+                    ))
+                }
 
                 _ => {}
             }
