@@ -1,6 +1,5 @@
 use std::fs::File;
 use std::io::Read;
-use std::mem::replace;
 use std::path::Path;
 
 use crate::opcodes::Instruction;

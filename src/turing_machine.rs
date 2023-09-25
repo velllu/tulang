@@ -11,6 +11,15 @@ pub enum Direction {
     Right,
 }
 
+impl Direction {
+    pub fn opposite(&self) -> Self {
+        match self {
+            Self::Left => Self::Right,
+            Self::Right => Self::Left,
+        }
+    }
+}
+
 pub struct State {
     direction: Direction,
     current_state: u32,
@@ -109,7 +118,7 @@ impl TuringMachine {
         // We also have to add a state for the excluded character, where we make it go
         // to the next state
         states.push(State {
-            direction: *direction,
+            direction: direction.opposite(),
             current_state: *current_state,
             next_state: current_state.wrapping_add(1),
             replace: (excluded_char, excluded_char),
