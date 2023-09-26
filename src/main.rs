@@ -1,9 +1,8 @@
-use parsing::parse_file;
-use turing_machine::TuringMachine;
+use calculation::TuringMachine;
 
-mod opcodes;
+mod calculation;
+mod instructions;
 mod parsing;
-mod turing_machine;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();

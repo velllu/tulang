@@ -1,7 +1,7 @@
-use std::{env::current_exe, fmt::Display, path::Path};
+use std::{fmt::Display, path::Path};
 
 use crate::{
-    opcodes::Instruction,
+    instructions::Instruction,
     parsing::{parse_file, ParseError},
 };
 
@@ -21,9 +21,13 @@ impl Direction {
 }
 
 pub struct State {
-    direction: Direction,
     current_state: u32,
     next_state: u32,
+
+    /// Direction to go after replacing
+    direction: Direction,
+
+    /// First char is what we replace from and the second one is what we replace to
     replace: (char, char),
 }
 
@@ -46,6 +50,9 @@ impl Display for State {
 
 pub struct TuringMachine {
     instructions: Vec<Instruction>,
+
+    /// The list from the `alphabet` instruction, this is needed to correctly calculate
+    /// moving from one point to another
     alphabet: Vec<char>,
 }
 
@@ -124,7 +131,10 @@ impl TuringMachine {
             replace: (excluded_char, excluded_char),
         });
 
-        // We also have to account for the "blank" space that is not in the alphabet
+        // If the excluded char is not a blank, we need to add a state handling it
+        // because blank is not contained in the alphabet
+        // If the excluded char is a blank, we can skip this because we have already
+        // added the needed state just above this comment block
         if excluded_char != '-' {
             states.push(State {
                 direction: *direction,

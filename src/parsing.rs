@@ -2,23 +2,25 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
-use crate::opcodes::Instruction;
+use crate::instructions::Instruction;
 
 #[derive(Debug)]
 pub enum ParseError {
     CouldNotOpenFile,
+    CouldNotParseCharacter,
+    CouldNotParseReplace,
     CouldNotReadFile,
+    EmptyFile,
     EmptyLine,
     MissingParameter,
-    OnlyOneLetterAllowed,
-    OnlyOneAlphabetAllowed,
     NoAlphabet,
-    CouldNotParseReplace,
-    CouldNotParseCharacter,
-    EmptyFile,
+    OnlyOneAlphabetAllowed,
+    OnlyOneLetterAllowed,
     UnknownCommand,
 }
 
+/// Gets the char at the `argument_number` position, used for parsing stuff like
+/// `move_to_char_left, CHAR` or any other instruction that requires to parse a char
 fn get_char(instruction_split: &Vec<&str>, argument_number: usize) -> Result<char, ParseError> {
     let element = match instruction_split.get(argument_number) {
         Some(element) => element,
@@ -34,11 +36,18 @@ fn get_char(instruction_split: &Vec<&str>, argument_number: usize) -> Result<cha
     Ok(element.chars().next().unwrap())
 }
 
-fn get_replaces(instruction_split: &Vec<&str>) -> Result<Vec<(char, char)>, ParseError> {
+/// Parse the replaces in this format `a -> b, d -> e` starting from `argument_number`,
+/// so for example if I have the instruction `move_to_char_right, c, a -> b` I will have
+/// to call `get_replaces(&instructions, 2)` to get back a vector of parsed replaces that
+/// should look like this: `('a', 'b')`
+fn get_replaces(
+    instruction_split: &Vec<&str>,
+    argument_number: usize,
+) -> Result<Vec<(char, char)>, ParseError> {
     // We need to remove the first two elements because they will be both
     // `move_to_char_right/left` and the actual character, we just need to focust on the
     // part after
-    let (_, instruction_split) = instruction_split.split_at(2);
+    let (_, instruction_split) = instruction_split.split_at(argument_number);
 
     let mut replaces: Vec<(char, char)> = Vec::new();
 
@@ -65,6 +74,7 @@ fn get_replaces(instruction_split: &Vec<&str>) -> Result<Vec<(char, char)>, Pars
     Ok(replaces)
 }
 
+/// Parses a singular line from a file into a nicely readable `Instruction`
 pub fn parse_instruction(instruction_split: Vec<&str>) -> Result<Instruction, ParseError> {
     let first = *match instruction_split.first() {
         Some(first) => first,
@@ -74,12 +84,12 @@ pub fn parse_instruction(instruction_split: Vec<&str>) -> Result<Instruction, Pa
     Ok(match first {
         "move_to_char_right" => Instruction::MoveToCharRight(
             get_char(&instruction_split, 1)?,
-            get_replaces(&instruction_split)?,
+            get_replaces(&instruction_split, 2)?,
         ),
 
         "move_to_char_left" => Instruction::MoveToCharLeft(
             get_char(&instruction_split, 1)?,
-            get_replaces(&instruction_split)?,
+            get_replaces(&instruction_split, 2)?,
         ),
 
         "alphabet" => {
