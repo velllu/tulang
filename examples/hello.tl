@@ -1,2 +1,2 @@
 alphabet, abcde
-move_to_char_left, $
+move_to_char, right, e

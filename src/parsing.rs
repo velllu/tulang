@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
+use crate::calculation::Direction;
 use crate::instructions::Instruction;
 
 #[derive(Debug)]
@@ -12,6 +13,7 @@ pub enum ParseError {
     CouldNotReadFile,
     EmptyFile,
     EmptyLine,
+    InvalidDirection,
     MissingParameter,
     NoAlphabet,
     OnlyOneAlphabetAllowed,
@@ -74,6 +76,23 @@ fn get_replaces(
     Ok(replaces)
 }
 
+/// Parse `left` or `right`
+fn get_direction(
+    instruction_split: &Vec<&str>,
+    argument_number: usize,
+) -> Result<Direction, ParseError> {
+    let direction_string = match instruction_split.get(argument_number) {
+        Some(direction_string) => direction_string,
+        None => return Err(ParseError::MissingParameter),
+    };
+
+    match *direction_string {
+        "left" => Ok(Direction::Left),
+        "right" => Ok(Direction::Right),
+        _ => Err(ParseError::InvalidDirection),
+    }
+}
+
 /// Parses a singular line from a file into a nicely readable `Instruction`
 pub fn parse_instruction(instruction_split: Vec<&str>) -> Result<Instruction, ParseError> {
     let first = *match instruction_split.first() {
@@ -82,14 +101,10 @@ pub fn parse_instruction(instruction_split: Vec<&str>) -> Result<Instruction, Pa
     };
 
     Ok(match first {
-        "move_to_char_right" => Instruction::MoveToCharRight(
-            get_char(&instruction_split, 1)?,
-            get_replaces(&instruction_split, 2)?,
-        ),
-
-        "move_to_char_left" => Instruction::MoveToCharLeft(
-            get_char(&instruction_split, 1)?,
-            get_replaces(&instruction_split, 2)?,
+        "move_to_char" => Instruction::MoveToChar(
+            get_direction(&instruction_split, 1)?,
+            get_char(&instruction_split, 2)?,
+            get_replaces(&instruction_split, 3)?,
         ),
 
         "alphabet" => {

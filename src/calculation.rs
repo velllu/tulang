@@ -11,6 +11,15 @@ pub enum Direction {
     Right,
 }
 
+impl Display for Direction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Left => write!(f, "left"),
+            Self::Right => write!(f, "right"),
+        }
+    }
+}
+
 impl Direction {
     pub fn opposite(&self) -> Self {
         match self {
@@ -72,12 +81,6 @@ impl TuringMachine {
             alphabet: alphabet.to_vec(),
             instructions,
         })
-    }
-
-    pub fn print_instructions(&self) {
-        for instruction in self.instructions.iter() {
-            println!("{}", instruction);
-        }
     }
 
     fn calculate_move_states(
@@ -156,23 +159,9 @@ impl TuringMachine {
 
         for instruction in self.instructions.iter() {
             match instruction {
-                Instruction::MoveToCharLeft(char, replaces) => {
-                    states.append(&mut self.calculate_move_states(
-                        *char,
-                        replaces,
-                        &Direction::Left,
-                        &mut current_state,
-                    ))
-                }
-
-                Instruction::MoveToCharRight(char, replaces) => {
-                    states.append(&mut self.calculate_move_states(
-                        *char,
-                        replaces,
-                        &Direction::Right,
-                        &mut current_state,
-                    ))
-                }
+                Instruction::MoveToChar(direction, char, replaces) => states.append(
+                    &mut self.calculate_move_states(*char, replaces, direction, &mut current_state),
+                ),
 
                 _ => {}
             }
