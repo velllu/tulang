@@ -14,6 +14,7 @@ pub enum ParseError {
     EmptyFile,
     EmptyLine,
     InvalidDirection,
+    LoopOrderError,
     MissingParameter,
     NoAlphabet,
     OnlyOneAlphabetAllowed,
@@ -107,6 +108,9 @@ pub fn parse_instruction(instruction_split: Vec<&str>) -> Result<Instruction, Pa
             get_replaces(&instruction_split, 3)?,
         ),
 
+        "begin_loop" => Instruction::BeginLoop,
+        "end_loop" => Instruction::EndLoop(get_direction(&instruction_split, 1)?),
+
         "alphabet" => {
             let string = instruction_split.get(1);
             let string = match string {
@@ -140,6 +144,7 @@ pub fn parse_file(path: impl AsRef<Path>) -> Result<Vec<Instruction>, ParseError
 
     let mut instructions: Vec<Instruction> = Vec::new();
     let mut alphabet_already_exists = false;
+    let mut has_loop_began = false;
     for line in file_contents.lines() {
         let split: Vec<&str> = line.split(", ").collect();
         let instruction = parse_instruction(split)?;
@@ -152,6 +157,27 @@ pub fn parse_file(path: impl AsRef<Path>) -> Result<Vec<Instruction>, ParseError
                 }
 
                 alphabet_already_exists = true;
+            }
+
+            _ => {}
+        }
+
+        // We need to check if only *one* loop is going on at a given time
+        match instruction {
+            Instruction::BeginLoop => {
+                if has_loop_began {
+                    return Err(ParseError::LoopOrderError);
+                }
+
+                has_loop_began = true;
+            }
+
+            Instruction::EndLoop(_) => {
+                if !has_loop_began {
+                    return Err(ParseError::LoopOrderError);
+                }
+
+                has_loop_began = false;
             }
 
             _ => {}

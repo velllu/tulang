@@ -152,9 +152,30 @@ impl TuringMachine {
         states
     }
 
+    fn calculate_end_loop_states(
+        &self,
+        direction: &Direction,
+        begin_loop_state: u32,
+        current_state: &mut u32,
+    ) -> Vec<State> {
+        let mut states: Vec<State> = Vec::new();
+
+        for character in self.alphabet.iter() {
+            states.push(State {
+                current_state: *current_state,
+                next_state: begin_loop_state,
+                direction: *direction,
+                replace: (*character, *character),
+            });
+        }
+
+        states
+    }
+
     pub fn calculate_states(&self) -> Vec<State> {
         // Now we actually do the calculating
         let mut states: Vec<State> = Vec::new();
+        let mut begin_loop_state: Option<u32> = None;
         let mut current_state: u32 = 0;
 
         for instruction in self.instructions.iter() {
@@ -163,7 +184,21 @@ impl TuringMachine {
                     &mut self.calculate_move_states(*char, replaces, direction, &mut current_state),
                 ),
 
-                _ => {}
+                Instruction::BeginLoop => begin_loop_state = Some(current_state),
+
+                Instruction::EndLoop(direction) => {
+                    // unwrapping `begin_loop_state` is safe because we already checked
+                    // in `parsing.rs` for wrong loop order
+                    states.append(&mut self.calculate_end_loop_states(
+                        direction,
+                        begin_loop_state.unwrap(),
+                        &mut current_state,
+                    ));
+
+                    begin_loop_state = None;
+                }
+
+                Instruction::Alphabet(_) => {}
             }
         }
 
