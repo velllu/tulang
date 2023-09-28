@@ -28,7 +28,7 @@ pub enum Instruction {
     MoveToChar(Direction, char, Vec<(char, char)>),
 
     BeginLoop,
-    EndLoop(Direction),
+    EndLoop(Direction, Vec<(char, char)>),
 }
 
 impl Display for Instruction {
@@ -46,7 +46,7 @@ impl Display for Instruction {
             }
 
             Self::BeginLoop => write!(f, "starting loop"),
-            Self::EndLoop(direction) => write!(f, "ending loop and going to {}", direction),
+            Self::EndLoop(direction, _) => write!(f, "ending loop and going to {}", direction),
             Self::Alphabet(chars) => write!(f, "alphabet: {}", chars.iter().collect::<String>()),
         }
     }

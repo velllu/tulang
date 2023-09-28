@@ -109,7 +109,10 @@ pub fn parse_instruction(instruction_split: Vec<&str>) -> Result<Instruction, Pa
         ),
 
         "begin_loop" => Instruction::BeginLoop,
-        "end_loop" => Instruction::EndLoop(get_direction(&instruction_split, 1)?),
+        "end_loop" => Instruction::EndLoop(
+            get_direction(&instruction_split, 1)?,
+            get_replaces(&instruction_split, 2)?,
+        ),
 
         "alphabet" => {
             let string = instruction_split.get(1);
@@ -172,7 +175,7 @@ pub fn parse_file(path: impl AsRef<Path>) -> Result<Vec<Instruction>, ParseError
                 has_loop_began = true;
             }
 
-            Instruction::EndLoop(_) => {
+            Instruction::EndLoop(_, _) => {
                 if !has_loop_began {
                     return Err(ParseError::LoopOrderError);
                 }
